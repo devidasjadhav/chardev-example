@@ -72,13 +72,14 @@ static int ftest_release(struct inode *inodep, struct file *filep){
 }
 static struct file_operations ftest_fops =
 {
+   .owner = THIS_MODULE,
    .open = ftest_open,
    .read = ftest_read,
    .write = ftest_write,
    .release = ftest_release,
 };
 
-static char arr[5][10] = {"1hello", "2hello" , "3hello" , "4hello" ,"5hello" };
+static char arr[5][1024] = {"1hello", "2hello" , "3hello" , "4hello" ,"5hello" };
 static int __init hello_init(void)
 {
 	int i;
