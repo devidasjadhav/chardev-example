@@ -27,8 +27,9 @@ int current_DATA = 0;
 //wait_queue_head_t my_queue;
 //init_waitqueue_head(&my_queue);
 
-int ftest_open(struct inode *inode, struct file *filp){
+int ftest_open(struct inode *inode, struct file *filep){
 	printk(KERN_INFO "Open Fopen!!!\n");
+	filep->private_data = dev_get_drvdata(temp_device[MINOR(inode->i_rdev)]);
 	return 0;
 }
 
@@ -36,22 +37,34 @@ int ftest_open(struct inode *inode, struct file *filp){
 
 static ssize_t ftest_read(struct file *filep, char *buffer, size_t len, loff_t *offset){
    int ret = 0;
-   printk(KERN_INFO "Read Fopen!!!\n");
-   if(size_of_message == 0)
+   char * cptr;
+   cptr = (char *)filep->private_data;
+   printk(KERN_INFO "Read Fopen %c!!!\n",cptr[0]);
+   if(cptr == NULL && strlen(cptr) == 0)
       return 0;
    printk(KERN_INFO "Bye.Read%s\n",filep->f_path.dentry->d_iname);
-   ret = copy_to_user(buffer,message,size_of_message);
-   ret = size_of_message;
-   size_of_message=0;
+//   ret = copy_to_user(buffer,message,size_of_message);
+    if(cptr){
+   	ret = strlen(cptr) - copy_to_user(buffer,cptr,strlen(cptr));
+	cptr[0] = 0;
+    }
+    else
+   	ret = strlen(message) - copy_to_user(buffer,message,strlen(message));
+
    return ret;
 }
 
 static ssize_t ftest_write(struct file *filep, const char *buffer, size_t len, loff_t *offset){
-	printk(KERN_INFO "Write Fopen %s!!!\n",filep->f_path.dentry->d_iname);
-        if(copy_from_user(message,buffer,len))
-		return -EFAULT;  
-        size_of_message = len;
-        return len;
+   char * cptr;
+   cptr = (char *)filep->private_data;
+   if(cptr == NULL)
+      return 0;
+	printk(KERN_INFO "Write Fopen , %s!!!\n",filep->f_path.dentry->d_iname);
+   //     if(copy_from_user(message,buffer,len))
+//		return -EFAULT;  
+  //      size_of_message = len;
+	strncpy(cptr , buffer , len);
+        return strlen(cptr);
 }
 static int ftest_release(struct inode *inodep, struct file *filep){
    printk(KERN_INFO "EBBChar: Device successfully closed\n");
@@ -65,40 +78,10 @@ static struct file_operations ftest_fops =
    .release = ftest_release,
 };
 
-
-int sysfs_test_set(const char *val, const struct kernel_param *kp){
-	printk(KERN_INFO "SET:%s\n",val);
-	return 0;
-}
-
-char dataBuff[1024];
-int sysfs_test_get(char *buffer, const struct kernel_param *kp){
-//	strcpy(buffer,"Hello");
-	int ret = 0;	
-	int fdNo = anon_inode_getfd("test",&ftest_fops, dataBuff ,O_RDWR);
-	printk(KERN_INFO "GET:%d\n",fdNo);
-	//ret = put_user(fdNo,(int *)buffer);	
-	ret = sprintf(buffer ,"%d",fdNo);
-	printk(KERN_INFO "GET:%d\n",ret);
-
-	return ret;
-}
-
-
-const struct kernel_param_ops sysfs_test_ops = 
-{
-    .set = &sysfs_test_set, // Use our setter ...
-    .get = &sysfs_test_get
-};
-//unsigned short param = 0xff;
-//char param[20]= {0};
-//module_param_cb(test,&sysfs_test_ops,&param,S_IRUGO | S_IWUSR);
-
-
+static char arr[5][10] = {"1hello", "2hello" , "3hello" , "4hello" ,"5hello" };
 static int __init hello_init(void)
 {
 	int i;
-    //INIT_LIST_HEAD(&listMember.list);
     alloc_chrdev_region(&temp_dev,0,5,"dummy");
         cdev_init(&temp_cdev,&ftest_fops);
         cdev_add(&temp_cdev,temp_dev,5);
@@ -106,7 +89,7 @@ static int __init hello_init(void)
 	for(i=0;i<5;i++){
         	printk("major %d minor %d\n", MAJOR(temp_dev),MINOR(temp_dev));
 //        	temp_device[i] = device_create(temp_class , NULL,temp_dev, "this is private data", "hello%d%d",MAJOR(temp_dev),MINOR(temp_dev));
-        	temp_device[i] = device_create(temp_class , NULL,temp_dev, "this is private data", "hello%d",MINOR(temp_dev));
+        	temp_device[i] = device_create(temp_class , NULL,temp_dev,(void *) arr[i], "hello%d",MINOR(temp_dev));
 		temp_dev++;
 	}
 
