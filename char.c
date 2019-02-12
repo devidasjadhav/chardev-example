@@ -1,6 +1,6 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
-#include <linux/init.h>  
+#include <linux/init.h>
 #include <linux/uaccess.h>
 #include <linux/fs.h>
 #include <linux/anon_inodes.h>
@@ -13,10 +13,10 @@
 
 #define MAX_FSIZE 1024
 
-MODULE_LICENSE("GPL");     
-MODULE_AUTHOR("Devidas"); 
-MODULE_DESCRIPTION("SysFS get set"); 
-MODULE_VERSION("0.1"); 
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Devidas");
+MODULE_DESCRIPTION("SysFS get set");
+MODULE_VERSION("0.1");
         struct cdev temp_cdev;
         dev_t temp_dev;
         struct class *temp_class;
@@ -59,13 +59,13 @@ static ssize_t ftest_write(struct file *filep, const char *buffer, size_t len, l
    printk(KERN_INFO "Write ,offset %lld message %s\n pointer %d in file %s!!!\n",*offset,buffer,cptr->i,filep->f_path.dentry->d_iname);
    ret = simple_write_to_buffer(cptr->str,MAX_FSIZE,offset,buffer,len);
    if(ret < 0)
-     return -EFAULT;  
+     return -EFAULT;
    cptr->i += ret;
    return ret;
 }
 static loff_t ftest_llseek (struct file * filep, loff_t offset, int whence){
 	printk(KERN_INFO "Hello!!!\n");
-	return generic_file_llseek(filep,offset,whence);	
+	return generic_file_llseek(filep,offset,whence);
 }
 static int ftest_release(struct inode *inodep, struct file *filep){
    printk(KERN_INFO "EBBChar: Device successfully closed\n");
@@ -90,7 +90,7 @@ static int __init hello_init(void)
         cdev_init(&temp_cdev,&ftest_fops);
         cdev_add(&temp_cdev,temp_dev,5);
         temp_class = class_create(THIS_MODULE,"test");
-		
+
 	for(i=0;i<5;i++){
         	printk("major %d minor %d\n", MAJOR(temp_dev),MINOR(temp_dev));
 //		memset(arr[i],0,1024);
@@ -116,7 +116,7 @@ static void __exit hello_cleanup(void)
   class_destroy(temp_class);
   cdev_del(&temp_cdev);
   unregister_chrdev_region(temp_dev,5);
- 
+
 }
 
 module_init(hello_init);
