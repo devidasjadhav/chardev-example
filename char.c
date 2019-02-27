@@ -9,6 +9,7 @@
 #include <linux/slab.h>
 #include <linux/cdev.h>
 #include <linux/device.h>
+#include <linux/uio.h>
 
 
 #define MAX_FSIZE 1024
@@ -71,6 +72,27 @@ static int ftest_release(struct inode *inodep, struct file *filep){
    printk(KERN_INFO "EBBChar: Device successfully closed\n");
    return 0;
 }
+static ssize_t ftest_read_iter(struct kiocb *iocb, struct iov_iter *to){
+	struct file *filep = iocb->ki_filp;	
+	struct priv_arr *cptr = (struct priv_arr *)filep->private_data;
+	int count = iov_iter_count(to);
+	printk(KERN_INFO "Read ITER %d %d!!!\n",count,cptr->i);
+   	if(cptr == NULL)
+      		return 0;
+	return copy_to_iter(cptr->str,cptr->i,to);
+}
+
+static ssize_t ftest_write_iter(struct kiocb *iocb, struct iov_iter *from){
+	struct file *filep = iocb->ki_filp;	
+	struct priv_arr *cptr = (struct priv_arr *)filep->private_data;
+	int count = iov_iter_count(from);
+	printk(KERN_INFO "Read ITER %d %d!!!\n",count,cptr->i);
+   	if(cptr == NULL)
+      		return 0;
+	return copy_from_iter(cptr->str,cptr->i,from);
+}
+
+
 static struct file_operations ftest_fops =
 {
    .owner = THIS_MODULE,
@@ -78,7 +100,8 @@ static struct file_operations ftest_fops =
    .read = ftest_read,
    .write = ftest_write,
    .llseek = ftest_llseek,
-
+   .read_iter = ftest_read_iter,
+   .write_iter = ftest_write_iter,
    .release = ftest_release,
 };
 int size_arr[5] = {7,7,7,7,7};
